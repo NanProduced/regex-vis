@@ -14,6 +14,10 @@ export const characterOptions = [
     label: 'Character range',
     value: 'ranges',
   },
+  {
+    label: 'Unicode property',
+    value: 'unicodeProperty',
+  },
 ]
 export const backRefOption = {
   label: 'Back reference',
