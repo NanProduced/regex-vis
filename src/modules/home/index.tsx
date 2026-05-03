@@ -82,16 +82,16 @@ function Home() {
       shouldParseRegex.current = true
       return
     }
-    const ast = parse(regex)
+    const result = parse(regex, { flags: ast.flags })
     clearSelected()
-    if (ast.type === 'regex') {
+    if (result.type === 'regex') {
       setErrorMsg(null)
-      setAst(ast)
+      setAst(result)
       shouldGenAst.current = false
     } else {
-      setErrorMsg(ast.message)
+      setErrorMsg(result.message)
     }
-  }, [regex, setAst, clearSelected])
+  }, [regex, ast.flags, setAst, clearSelected])
 
   useEffect(() => {
     // update url search

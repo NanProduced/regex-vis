@@ -9,6 +9,7 @@ import { removeBackslash } from './backslash'
 export type Options = {
   escapeBackslash?: boolean
   idGenerator?: (size?: number) => string
+  flags?: string[]
 }
 
 export class Parser {
@@ -22,11 +23,12 @@ export class Parser {
   idGenerator: (size?: number) => string
   constructor(
     regex: string,
-    { idGenerator = nanoid, escapeBackslash = false }: Options = {},
+    { idGenerator = nanoid, escapeBackslash = false, flags = [] }: Options = {},
   ) {
     this.regex = regex
     this.escapeBackslash = escapeBackslash
     this.idGenerator = idGenerator
+    this.flags = flags as AST.Flag[]
   }
 
   public parse(): AST.Regex | AST.RegexError {
@@ -378,7 +380,7 @@ export class Parser {
         regex = removeBackslash(regex)
       }
       // eslint-disable-next-line no-new
-      new RegExp(regex)
+      new RegExp(regex, this.flags.join(''))
     } catch (error) {
       if (error instanceof Error) {
         this.message = error.message
