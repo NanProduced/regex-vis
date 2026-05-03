@@ -13,6 +13,7 @@ import { genPermalink } from '@/utils/helpers'
 import { STORAGE_TEST_CASES } from '@/constants'
 import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 type Case = {
   value: string
@@ -21,16 +22,26 @@ type Case = {
 
 function TestTab() {
   const { t } = useTranslation()
-  const [casesInStorages, setCasesInStorages] = useLocalStorage<string[]>(STORAGE_TEST_CASES, [''])
+  const [casesInStorages, setCasesInStor] = useLocalStorage<string[]>(STORAGE_TEST_CASES, [''])
   const [cases, setCases] = useState<{
     value: string
     id: string
   }[]>(() => casesInStorages?.map(value => ({ value, id: nanoid() })) ?? [])
 
   const ast = useAtomValue(astAtom)
-  const regExp = useMemo(() => {
-    const regex = gen(ast, { literal: false, escapeBackslash: false })
-    return new RegExp(regex, ast.flags.join(''))
+  const { regExp, error } = useMemo(() => {
+    try {
+      const regex = gen(ast, { literal: false, escapeBackslash: false })
+      return {
+        regExp: new RegExp(regex, ast.flags.join('')),
+        error: null
+      }
+    } catch (e) {
+      return {
+        regExp: null,
+        error: e instanceof Error ? e.message : String(e)
+      }
+    }
   }, [ast])
 
   const { toast } = useToast()
@@ -38,7 +49,7 @@ function TestTab() {
 
   const saveCases = (cases: Case[]) => {
     setCases(cases)
-    setCasesInStorages(cases.map(({ value }) => value))
+    setCasesInStor(cases.map(({ value }) => value))
   }
 
   const handleCopyPermalink = () => {
@@ -76,6 +87,11 @@ function TestTab() {
 
   return (
     <div>
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       <div className="space-y-6">
         {cases!.map(({ value, id }, index) => (
           <React.Fragment key={id}>
