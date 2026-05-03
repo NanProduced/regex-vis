@@ -149,10 +149,6 @@ function processNodeForOctalDisambiguation(
     return [node]
   }
 
-  if (ref.length === 1) {
-    return [node]
-  }
-
   if (refNum <= capturingGroupCount) {
     return [node]
   }

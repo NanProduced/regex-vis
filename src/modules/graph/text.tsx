@@ -2,7 +2,7 @@ import React, { Fragment } from 'react'
 import type { TFunction } from 'react-i18next'
 import { useTranslation } from 'react-i18next'
 import type { AST, CharacterClassKey } from '@/parser'
-import { characterClassTextMap } from '@/parser'
+import { characterClassTextMap, getCharacterDescription } from '@/parser'
 import {
   GRAPH_QUOTE_PADDING,
 } from '@/constants'
@@ -52,13 +52,21 @@ function renderClassCharacter(value: string, t: TFunction) {
     return <span className="text-foreground/50">{t('Empty')}</span>
   } else if (value in characterClassTextMap) {
     return <span>{t(characterClassTextMap[value as CharacterClassKey])}</span>
-  } else {
+  }
+  const desc = getCharacterDescription(value)
+  if (desc) {
     return (
       <span>
-        {value}
+        <span className="font-mono text-teal-400">{desc.hex}</span>
+        <span className="text-foreground/60 ml-1">({desc.name})</span>
       </span>
     )
   }
+  return (
+    <span>
+      {value}
+    </span>
+  )
 }
 
 function renderRangesCharacter(node: AST.RangesCharacterNode, t: TFunction) {

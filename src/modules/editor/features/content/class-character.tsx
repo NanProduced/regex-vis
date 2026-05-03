@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { Input } from '@/components/ui/input'
 import Cell from '@/components/cell'
 import type { CharacterClassKey } from '@/parser'
-import { characterClassTextMap } from '@/parser'
+import { characterClassTextMap, getCharacterDescription } from '@/parser'
 import { updateContentAtom } from '@/atom'
 import {
   Select,
@@ -42,6 +42,10 @@ const ClassCharacter: React.FC<Props> = ({ value }) => {
       return '\\uhhhh'
     }
     return value
+  }, [value])
+
+  const charDesc = useMemo(() => {
+    return getCharacterDescription(value)
   }, [value])
 
   const handleSelectChange = (value: string) => {
@@ -85,26 +89,42 @@ const ClassCharacter: React.FC<Props> = ({ value }) => {
           </SelectContent>
         </Select>
         {classKind === '\\xhh' && (
-          <Validation defaultValue={value} onChange={onInputChange} schema={xhhSchema}>
-            {(value: string, onChange: (value: string) => void) => (
-              <Input
-                className="w-52 font-mono"
-                value={value}
-                onChange={onChange}
-              />
+          <>
+            <Validation defaultValue={value} onChange={onInputChange} schema={xhhSchema}>
+              {(value: string, onChange: (value: string) => void) => (
+                <Input
+                  className="w-52 font-mono"
+                  value={value}
+                  onChange={onChange}
+                />
+              )}
+            </Validation>
+            {charDesc && (
+              <div className="text-sm text-foreground/70">
+                <span className="font-mono text-teal-400">{charDesc.hex}</span>
+                <span className="ml-2">({charDesc.name})</span>
+              </div>
             )}
-          </Validation>
+          </>
         )}
         {classKind === '\\uhhhh' && (
-          <Validation defaultValue={value} onChange={onInputChange} schema={uhhhhSchema}>
-            {(value: string, onChange: (value: string) => void) => (
-              <Input
-                className="w-52 font-mono"
-                value={value}
-                onChange={onChange}
-              />
+          <>
+            <Validation defaultValue={value} onChange={onInputChange} schema={uhhhhSchema}>
+              {(value: string, onChange: (value: string) => void) => (
+                <Input
+                  className="w-52 font-mono"
+                  value={value}
+                  onChange={onChange}
+                />
+              )}
+            </Validation>
+            {charDesc && (
+              <div className="text-sm text-foreground/70">
+                <span className="font-mono text-teal-400">{charDesc.hex}</span>
+                <span className="ml-2">({charDesc.name})</span>
+              </div>
             )}
-          </Validation>
+          </>
         )}
       </div>
     </Cell.Item>
