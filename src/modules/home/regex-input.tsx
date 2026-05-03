@@ -34,6 +34,9 @@ const FLAGS = [{
 }, {
   value: 's',
   label: 'Allows . to match newline',
+}, {
+  value: 'u',
+  label: 'Unicode mode (enables \\p{...})',
 }]
 
 const RegexInput: React.FC<Props> = ({
