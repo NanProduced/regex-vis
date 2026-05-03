@@ -832,8 +832,9 @@ const tests: Tests = {
     body: [
       {
         id: '',
-        type: 'backReference',
-        ref: '1',
+        type: 'character',
+        kind: 'class',
+        value: '\\x01',
         quantifier: null,
       },
     ],
@@ -926,8 +927,9 @@ const tests: Tests = {
       },
       {
         id: '',
-        type: 'backReference',
-        ref: '1',
+        type: 'character',
+        kind: 'class',
+        value: '\\x01',
         quantifier: null,
       },
     ],
@@ -4427,6 +4429,10 @@ const withoutGenRegex = [
   '/^[a-zA-Z0-9!-/:-@\\[-`{-~]*$/',
   '/^[ｧ-ﾝﾞﾟ\\-]*$/',
   '/\\aaa?/',
+  '/\\1/',
+  '/(?:a)\\1/',
+  '/\\377/',
+  '/\\400/',
 ]
 
 it('parse es2015 regex', () => {
