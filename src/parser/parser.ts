@@ -6,6 +6,200 @@ import Lexer from './lexer'
 import { TokenType } from './token'
 import { removeBackslash } from './backslash'
 
+const controlCharMap: Record<string, string> = {
+  '\t': '\\t',
+  '\n': '\\n',
+  '\r': '\\r',
+  '\f': '\\f',
+  '\v': '\\v',
+}
+
+function charToEscapeSequence(charCode: number): string {
+  if (charCode === 0) {
+    return '\\0'
+  }
+  const char = String.fromCharCode(charCode)
+  if (char in controlCharMap) {
+    return controlCharMap[char]
+  }
+  const hex = charCode.toString(16).padStart(2, '0').toUpperCase()
+  return `\\x${hex}`
+}
+
+function parseOctalEscape(digits: string): { octalValue: number; consumed: string; remaining: string } | null {
+  if (digits.length === 0) {
+    return null
+  }
+
+  const firstDigit = parseInt(digits[0], 10)
+  if (isNaN(firstDigit) || firstDigit < 0 || firstDigit > 7) {
+    return null
+  }
+
+  let maxLength: number
+  if (firstDigit >= 0 && firstDigit <= 3) {
+    maxLength = 3
+  } else {
+    maxLength = 2
+  }
+
+  let consumed = ''
+  let octalValue = 0
+  for (let i = 0; i < Math.min(maxLength, digits.length); i++) {
+    const digit = parseInt(digits[i], 10)
+    if (digit < 0 || digit > 7) {
+      break
+    }
+    octalValue = octalValue * 8 + digit
+    consumed += digits[i]
+  }
+
+  if (consumed.length === 0) {
+    return null
+  }
+
+  return {
+    octalValue,
+    consumed,
+    remaining: digits.slice(consumed.length),
+  }
+}
+
+function isAllDigits(str: string): boolean {
+  return /^\d+$/.test(str)
+}
+
+function processNodeForOctalDisambiguation(
+  node: AST.Node,
+  capturingGroupCount: number,
+  hasUFlag: boolean,
+  idGenerator: () => string,
+): AST.Node[] {
+  if (node.type === 'group') {
+    return [
+      {
+        ...node,
+        children: processNodesForOctalDisambiguation(node.children, capturingGroupCount, hasUFlag, idGenerator),
+      },
+    ]
+  }
+
+  if (node.type === 'lookAroundAssertion') {
+    return [
+      {
+        ...node,
+        children: processNodesForOctalDisambiguation(node.children, capturingGroupCount, hasUFlag, idGenerator),
+      },
+    ]
+  }
+
+  if (node.type === 'choice') {
+    return [
+      {
+        ...node,
+        branches: node.branches.map(branch =>
+          processNodesForOctalDisambiguation(branch, capturingGroupCount, hasUFlag, idGenerator),
+        ),
+      },
+    ]
+  }
+
+  if (node.type !== 'backReference') {
+    return [node]
+  }
+
+  const { ref, quantifier } = node
+
+  if (!isAllDigits(ref)) {
+    return [node]
+  }
+
+  if (hasUFlag) {
+    return [node]
+  }
+
+  const refNum = parseInt(ref, 10)
+
+  if (ref.startsWith('0')) {
+    const octalResult = parseOctalEscape(ref)
+    if (octalResult) {
+      const escapeSeq = charToEscapeSequence(octalResult.octalValue)
+      const result: AST.Node[] = [
+        {
+          id: idGenerator(),
+          type: 'character',
+          kind: 'class',
+          value: escapeSeq,
+          quantifier: octalResult.remaining.length === 0 ? quantifier : null,
+        },
+      ]
+
+      if (octalResult.remaining.length > 0) {
+        result.push({
+          id: idGenerator(),
+          type: 'character',
+          kind: 'string',
+          value: octalResult.remaining,
+          quantifier,
+        })
+      }
+
+      return result
+    }
+    return [node]
+  }
+
+  if (ref.length === 1) {
+    return [node]
+  }
+
+  if (refNum <= capturingGroupCount) {
+    return [node]
+  }
+
+  const octalResult = parseOctalEscape(ref)
+  if (!octalResult) {
+    return [node]
+  }
+
+  const escapeSeq = charToEscapeSequence(octalResult.octalValue)
+  const result: AST.Node[] = [
+    {
+      id: idGenerator(),
+      type: 'character',
+      kind: 'class',
+      value: escapeSeq,
+      quantifier: octalResult.remaining.length === 0 ? quantifier : null,
+    },
+  ]
+
+  if (octalResult.remaining.length > 0) {
+    result.push({
+      id: idGenerator(),
+      type: 'character',
+      kind: 'string',
+      value: octalResult.remaining,
+      quantifier,
+    })
+  }
+
+  return result
+}
+
+function processNodesForOctalDisambiguation(
+  nodes: AST.Node[],
+  capturingGroupCount: number,
+  hasUFlag: boolean,
+  idGenerator: () => string,
+): AST.Node[] {
+  const result: AST.Node[] = []
+  for (const node of nodes) {
+    const processed = processNodeForOctalDisambiguation(node, capturingGroupCount, hasUFlag, idGenerator)
+    result.push(...processed)
+  }
+  return result
+}
+
 export type Options = {
   escapeBackslash?: boolean
   idGenerator?: (size?: number) => string
@@ -36,10 +230,20 @@ export class Parser {
     this.lexer = new Lexer(this.regex, this.escapeBackslash)
 
     const body = this.parseNodes()
+
+    const capturingGroupCount = this.groupIndex - 1
+    const hasUFlag = this.flags.includes('u')
+    const processedBody = processNodesForOctalDisambiguation(
+      body,
+      capturingGroupCount,
+      hasUFlag,
+      () => this.id(),
+    )
+
     return {
       id: this.id(),
       type: 'regex',
-      body,
+      body: processedBody,
       flags: this.flags,
       literal: this.literal,
       escapeBackslash: this.escapeBackslash,
