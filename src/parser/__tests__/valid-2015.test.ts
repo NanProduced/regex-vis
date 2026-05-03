@@ -1404,8 +1404,9 @@ const tests: Tests = {
     body: [
       {
         id: '',
-        type: 'backReference',
-        ref: '377',
+        type: 'character',
+        kind: 'class',
+        value: '\\xFF',
         quantifier: null,
       },
     ],
@@ -1419,8 +1420,16 @@ const tests: Tests = {
     body: [
       {
         id: '',
-        type: 'backReference',
-        ref: '400',
+        type: 'character',
+        kind: 'class',
+        value: '\\x20',
+        quantifier: null,
+      },
+      {
+        id: '',
+        type: 'character',
+        kind: 'string',
+        value: '0',
         quantifier: null,
       },
     ],
