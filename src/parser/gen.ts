@@ -170,6 +170,13 @@ export class CodeGen {
             ? node.value
             : this.characterClassPrefix + node.value
         break
+      case 'unicodeProperty': {
+        const { property, value: propValue, negate } = node
+        const pChar = negate ? 'P' : 'p'
+        const content = propValue ? `${property}=${propValue}` : property
+        this.regex += `${this.backslash}${pChar}{${content}}`
+        break
+      }
       default:
         break
     }
