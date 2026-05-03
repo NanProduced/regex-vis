@@ -7,6 +7,7 @@ import SimpleString from './simple-string'
 import ClassCharacter from './class-character'
 import BackRef from './back-ref'
 import WordBoundary from './word-boundary'
+import UnicodeProperty from './unicode-property'
 import {
   backRefOption,
   beginningAssertionOption,
@@ -86,6 +87,14 @@ const ContentEditor: React.FC<Prop> = ({ content, id, quantifier }) => {
       case 'wordBoundaryAssertion':
         payload = { kind: 'wordBoundaryAssertion', negate: false }
         break
+      case 'unicodeProperty':
+        payload = {
+          kind: 'unicodeProperty',
+          property: 'Lu',
+          value: null,
+          negate: false,
+        }
+        break
       default:
         return
     }
@@ -130,6 +139,13 @@ const ContentEditor: React.FC<Prop> = ({ content, id, quantifier }) => {
       )}
       {content.kind === 'wordBoundaryAssertion' && (
         <WordBoundary negate={content.negate} />
+      )}
+      {content.kind === 'unicodeProperty' && (
+        <UnicodeProperty
+          property={content.property}
+          value={content.value}
+          negate={content.negate}
+        />
       )}
     </Cell>
   )

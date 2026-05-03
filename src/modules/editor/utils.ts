@@ -47,6 +47,14 @@ const getContentInfo = (nodes: AST.Node[]): AST.Content | null => {
         if (node.kind === 'ranges') {
           return { kind: node.kind, ranges: node.ranges, negate: node.negate }
         }
+        if (node.kind === 'unicodeProperty') {
+          return {
+            kind: node.kind,
+            property: node.property,
+            value: node.value,
+            negate: node.negate,
+          }
+        }
         return { kind: node.kind, value: node.value }
       case 'backReference':
         return { kind: 'backReference', ref: node.ref }

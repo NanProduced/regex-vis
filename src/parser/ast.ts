@@ -177,6 +177,7 @@ export type BackReferenceNode = {
 export type Content =
   | { kind: 'string' | 'class', value: string }
   | { kind: 'ranges', ranges: Range[], negate: boolean }
+  | { kind: 'unicodeProperty', property: string, value: string | null, negate: boolean }
   | { kind: 'backReference', ref: string }
   | { kind: 'beginningAssertion' | 'endAssertion' }
   | { kind: 'wordBoundaryAssertion', negate: boolean }
