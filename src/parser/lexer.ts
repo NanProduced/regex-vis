@@ -84,6 +84,13 @@ class Lexer {
         span: { start, end: this.index },
       }
     }
+    const unicodePropertyMatches = this.readByRegex(patterns.unicodeProperty)
+    if (unicodePropertyMatches) {
+      return {
+        type: TokenType.UnicodeProperty,
+        span: { start, end: this.index },
+      }
+    }
     if (range) {
       if (this.curRegex[1] === 'b') {
         return {

@@ -145,6 +145,15 @@ const TextNode = React.memo(({ node }: Props) => {
           return (
             <div className="text-center pointer-events-none whitespace-nowrap leading-normal text-foreground [&>span]:align-middle">{renderClassCharacter(node.value, t)}</div>
           )
+        case 'unicodeProperty': {
+          const { property, value: propValue, negate } = node
+          const pChar = negate ? 'P' : 'p'
+          const content = propValue ? `${property}=${propValue}` : property
+          const displayText = `\\${pChar}{${content}}`
+          return (
+            <div className="text-center pointer-events-none whitespace-nowrap leading-normal text-foreground [&>span]:align-middle">{displayText}</div>
+          )
+        }
         case 'ranges':
           return renderRangesCharacter(node, t)
         default:

@@ -136,6 +136,32 @@ export class Parser {
           })
           break
         }
+        case TokenType.UnicodeProperty: {
+          const value = this.regex.slice(start, end)
+          const quantifier = this.parseQuantifier()
+          const negate = value[1] === 'P'
+          const content = value.slice(3, -1)
+          const eqIndex = content.indexOf('=')
+          let property: string
+          let propValue: string | null
+          if (eqIndex !== -1) {
+            property = content.slice(0, eqIndex)
+            propValue = content.slice(eqIndex + 1)
+          } else {
+            property = content
+            propValue = null
+          }
+          nodes.push({
+            id: this.id(),
+            type: 'character',
+            kind: 'unicodeProperty',
+            property,
+            value: propValue,
+            negate,
+            quantifier,
+          })
+          break
+        }
         case TokenType.BackReference: {
           const ref
             = this.regex[start + 1] === 'k'
@@ -357,6 +383,11 @@ export class Parser {
       if (error instanceof Error) {
         this.message = error.message
       }
+      return false
+    }
+    const hasUnicodeProperty = /\\[pP]\{[^}]+\}/.test(this.regex)
+    if (hasUnicodeProperty && !this.flags.includes('u')) {
+      this.message = 'Invalid regular expression: \\p and \\P are only valid with the u flag'
       return false
     }
     return true

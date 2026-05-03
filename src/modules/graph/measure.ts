@@ -178,6 +178,14 @@ function measureCharacter(node: AST.CharacterNode): [number, number] {
       }
       break
     }
+    case 'unicodeProperty': {
+      const { property, value: propValue, negate } = node
+      const pChar = negate ? 'P' : 'p'
+      const content = propValue ? `${property}=${propValue}` : property
+      const displayText = `\\${pChar}{${content}}`
+      size = measureNodeText(displayText)
+      break
+    }
     case 'ranges': {
       size = measureRanges(node.ranges)
       break

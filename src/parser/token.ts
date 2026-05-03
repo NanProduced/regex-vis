@@ -12,6 +12,7 @@ export enum TokenType {
   RangeEnd,
   Choice,
   CharacterClass,
+  UnicodeProperty,
   EscapedChar,
   Assertion,
   BackReference,

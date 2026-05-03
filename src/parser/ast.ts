@@ -72,6 +72,15 @@ export type ClassCharacterNode = {
   quantifier: Quantifier | null
 } & NodeBase
 
+export type UnicodePropertyCharacterNode = {
+  type: 'character'
+  kind: 'unicodeProperty'
+  property: string
+  value: string | null
+  negate: boolean
+  quantifier: Quantifier | null
+} & NodeBase
+
 export type RangesCharacter = {
   kind: 'ranges'
   ranges: Range[]
@@ -82,6 +91,7 @@ export type CharacterNode =
   | StringCharacterNode
   | RangesCharacterNode
   | ClassCharacterNode
+  | UnicodePropertyCharacterNode
 
 export type GroupKind = 'capturing' | 'nonCapturing' | 'namedCapturing'
 
