@@ -130,4 +130,7 @@ yarn-error.log*
 
 /export
 
+.claude/
+.playwright-mcp/
+
 .swc
