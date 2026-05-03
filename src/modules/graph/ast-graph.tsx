@@ -51,9 +51,15 @@ type Props = {
 const MIN_SCALE = 0.25
 const MAX_SCALE = 2.0
 const SCALE_STEP = 0.1
+const PAN_THRESHOLD = 5
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
+}
+
+function captureClick(e: MouseEvent) {
+  e.stopPropagation()
+  window.removeEventListener('click', captureClick, true)
 }
 
 function measureNodes(nodes: AST.Node[], sizeMap: Map<AST.Node | AST.Node[], NodeSize>): [number, number] {
@@ -106,7 +112,9 @@ const ASTGraph = React.memo(({ ast, onPanZoomChange, panZoomRef }: Props) => {
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const isPanning = useRef(false)
+  const dragStartPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   const lastMousePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const hasMovedBeyondThreshold = useRef(false)
   const contentSizeRef = useRef<[number, number]>([0, 0])
   contentSizeRef.current = contentSize
 
@@ -156,10 +164,32 @@ const ASTGraph = React.memo(({ ast, onPanZoomChange, panZoomRef }: Props) => {
   }, [])
 
   const reset = React.useCallback(() => {
+    const [contentWidth, contentHeight] = contentSizeRef.current
+    const svg = svgRef.current
+
+    if (!svg || contentWidth <= 0 || contentHeight <= 0) {
+      setPanZoomState({
+        scale: 1.0,
+        panX: 0,
+        panY: 0,
+      })
+      return
+    }
+
+    const rect = svg.getBoundingClientRect()
+    const viewWidth = rect.width
+    const viewHeight = rect.height
+
+    const scale = 1.0
+    const scaledWidth = contentWidth * scale
+    const scaledHeight = contentHeight * scale
+    const panX = (viewWidth - scaledWidth) / 2
+    const panY = (viewHeight - scaledHeight) / 2
+
     setPanZoomState({
-      scale: 1.0,
-      panX: 0,
-      panY: 0,
+      scale,
+      panX,
+      panY,
     })
   }, [])
 
@@ -226,32 +256,43 @@ const ASTGraph = React.memo(({ ast, onPanZoomChange, panZoomRef }: Props) => {
   }, [])
 
   const handleMouseDown = React.useCallback((e: MouseEvent) => {
-    const target = e.target as Element
-    if (target.closest('rect, foreignObject, g')) {
-      return
-    }
-
     isPanning.current = true
+    hasMovedBeyondThreshold.current = false
+    dragStartPos.current = { x: e.clientX, y: e.clientY }
     lastMousePos.current = { x: e.clientX, y: e.clientY }
   }, [])
 
   const handleMouseMove = React.useCallback((e: MouseEvent) => {
     if (!isPanning.current) return
 
-    const dx = e.clientX - lastMousePos.current.x
-    const dy = e.clientY - lastMousePos.current.y
+    const totalDx = e.clientX - dragStartPos.current.x
+    const totalDy = e.clientY - dragStartPos.current.y
+    const totalDistance = Math.sqrt(totalDx * totalDx + totalDy * totalDy)
+
+    if (!hasMovedBeyondThreshold.current && totalDistance >= PAN_THRESHOLD) {
+      hasMovedBeyondThreshold.current = true
+    }
+
+    if (hasMovedBeyondThreshold.current) {
+      const dx = e.clientX - lastMousePos.current.x
+      const dy = e.clientY - lastMousePos.current.y
+
+      setPanZoomState(prev => ({
+        ...prev,
+        panX: prev.panX + dx,
+        panY: prev.panY + dy,
+      }))
+    }
 
     lastMousePos.current = { x: e.clientX, y: e.clientY }
-
-    setPanZoomState(prev => ({
-      ...prev,
-      panX: prev.panX + dx,
-      panY: prev.panY + dy,
-    }))
   }, [])
 
   const handleMouseUp = React.useCallback(() => {
+    if (hasMovedBeyondThreshold.current) {
+      window.addEventListener('click', captureClick, true)
+    }
     isPanning.current = false
+    hasMovedBeyondThreshold.current = false
   }, [])
 
   useEffect(() => {
